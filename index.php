@@ -1,4 +1,17 @@
 <?php
+
+namespace ABC\DEF {
+	use Symfony\Component\HttpFoundation\Response;
+	class MyController
+	{
+		public function base()
+		{
+			return new Response('a');
+		}
+	}
+}
+
+namespace {
 $time = microtime(true);
 require_once('vendor/autoload.php');
 
@@ -38,6 +51,12 @@ use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\Routing\Route;
 
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+use Symfony\Component\HttpKernel\HttpKernel;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\HttpKernel\Controller\ControllerResolver;
+use Symfony\Component\HttpKernel\EventListener\RouterListener;
 
 function example1()
 {
@@ -68,7 +87,6 @@ function example2()
 
 function exampleRouting1()
 {
-	// look inside *this* directory
 	$locator = new FileLocator(array(__DIR__));
 	$loader = new YamlRoutingLoader($locator);
 	$routes = $loader->load('routes.yml');
@@ -90,8 +108,34 @@ function exampleRouting1()
 	}
 }
 
+function exampleKernel1()
+{
+	$locator = new FileLocator(array(__DIR__));
+	$loader = new YamlRoutingLoader($locator);
+	$routes = $loader->load('routes.yml');
+	
+	$request = Request::createFromGlobals();
+	$context = new RequestContext();
+	$context->fromRequest($request);
+
+	$matcher = new UrlMatcher($routes, $context);
+
+	$dispatcher = new EventDispatcher();
+	$dispatcher->addSubscriber(new RouterListener($matcher));
+
+	$resolver = new ControllerResolver();
+	$kernel = new HttpKernel($dispatcher, $resolver);
+
+	$response = $kernel->handle($request);
+	$response->send();
+
+	$kernel->terminate($request, $response);
+}
+
 //example1();
 //example2();
-exampleRouting1();
+//exampleRouting1();
+exampleKernel1();
 echo "\n".number_format(memory_get_peak_usage() / 1024 / 1024, 4).' MB';
 echo "\n".number_format(microtime(true) - $time, 4).' s';
+}

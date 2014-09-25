@@ -1,3 +1,7 @@
+routebase:
+    path:     /
+    defaults: { _controller: 'ABC\DEF\MyController::base' }
+
 route1:
     path:     /foo
     defaults: { _controller: 'MyController::fooAction' }
