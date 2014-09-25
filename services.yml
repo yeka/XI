@@ -1,0 +1,9 @@
+parameters:
+    name: Yakub
+    message: hi
+services:
+    abc:
+        class: ABC
+        arguments: [%name%, %message%]
+        calls:
+            - [appendMessage, [Kitty]]
