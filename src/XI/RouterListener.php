@@ -15,6 +15,7 @@ class RouterListener implements EventSubscriberInterface
 {
     public function onKernelRequest(GetResponseEvent $event)
     {
+        /** @var Request $request */
         $request = $event->getRequest();
 
         if ($request->attributes->has('_controller')) {

@@ -1,12 +1,18 @@
 <?php
 
 namespace ABC\DEF {
+	use Symfony\Component\HttpFoundation\Request;
 	use Symfony\Component\HttpFoundation\Response;
 	class MyController
 	{
 		public function base()
 		{
 			return new Response('a');
+		}
+
+		public function second(Request $r)
+		{
+			return new Response($r->get('a', 'a'));
 		}
 	}
 }
@@ -148,11 +154,28 @@ function exampleKernel2()
 	$kernel->terminate($request, $response);
 }
 
+function exampleKernel3()
+{
+	$_GET['a'] = 'b';
+	$request = Request::createFromGlobals();
+
+	$dispatcher = new EventDispatcher();
+
+	$resolver = new \XI\ControllerResolver();
+	$kernel = new HttpKernel($dispatcher, $resolver);
+
+	$response = $kernel->handle($request);
+	$response->send();
+
+	$kernel->terminate($request, $response);
+}
+
 //example1();
 //example2();
 //exampleRouting1();
 //exampleKernel1();
-exampleKernel2();
+//exampleKernel2();
+exampleKernel3();
 echo "\n".number_format(memory_get_peak_usage() / 1024 / 1024, 4).' MB';
 echo "\n".number_format(microtime(true) - $time, 4).' s';
 }
