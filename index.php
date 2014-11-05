@@ -19,7 +19,7 @@ class ABC
 {
 	protected $name;
 	protected $msg;
-	
+
 	public function __construct($name = null, $message = null)
 	{
 		$this->name = $name;
@@ -90,7 +90,7 @@ function exampleRouting1()
 	$locator = new FileLocator(array(__DIR__));
 	$loader = new YamlRoutingLoader($locator);
 	$routes = $loader->load('routes.yml');
-	
+
 	$request = Request::createFromGlobals();
 	$context = new RequestContext();
 	$context->fromRequest($request);
@@ -113,7 +113,7 @@ function exampleKernel1()
 	$locator = new FileLocator(array(__DIR__));
 	$loader = new YamlRoutingLoader($locator);
 	$routes = $loader->load('routes.yml');
-	
+
 	$request = Request::createFromGlobals();
 	$context = new RequestContext();
 	$context->fromRequest($request);
@@ -132,10 +132,27 @@ function exampleKernel1()
 	$kernel->terminate($request, $response);
 }
 
+function exampleKernel2()
+{
+	$request = Request::createFromGlobals();
+
+	$dispatcher = new EventDispatcher();
+	$dispatcher->addSubscriber(new \XI\RouterListener());
+
+	$resolver = new ControllerResolver();
+	$kernel = new HttpKernel($dispatcher, $resolver);
+
+	$response = $kernel->handle($request);
+	$response->send();
+
+	$kernel->terminate($request, $response);
+}
+
 //example1();
 //example2();
 //exampleRouting1();
-exampleKernel1();
+//exampleKernel1();
+exampleKernel2();
 echo "\n".number_format(memory_get_peak_usage() / 1024 / 1024, 4).' MB';
 echo "\n".number_format(microtime(true) - $time, 4).' s';
 }
