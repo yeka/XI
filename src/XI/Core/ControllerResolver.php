@@ -1,12 +1,12 @@
 <?php
 
-namespace XI;
+namespace XI\Core;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
 
 /**
- * @author Fabien Potencier <fabien@symfony.com>
+ * @author Yakub Kristianto <yakub1986@gmail.com>
  */
 
 class ControllerResolver implements ControllerResolverInterface

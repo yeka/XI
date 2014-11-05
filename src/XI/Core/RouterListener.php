@@ -1,6 +1,6 @@
 <?php
 
-namespace XI;
+namespace XI\Core;
 
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;

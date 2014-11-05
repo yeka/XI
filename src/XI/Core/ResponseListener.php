@@ -1,6 +1,6 @@
 <?php
 
-namespace XI;
+namespace XI\Core;
 
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;

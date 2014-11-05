@@ -4,6 +4,10 @@ namespace XI;
 
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * @author Yakub Kristianto <yakub1986@gmail.com>
+ */
+
 class Controller
 {
     private $apppath;

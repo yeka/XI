@@ -199,9 +199,9 @@ function exampleKernel3()
 	$request = Request::createFromGlobals();
 
 	$dispatcher = new EventDispatcher();
-	$dispatcher->addSubscriber(new \XI\ResponseListener(dirname($_SERVER['SCRIPT_FILENAME']).'/app/'));
+	$dispatcher->addSubscriber(new \XI\Core\ResponseListener(dirname($_SERVER['SCRIPT_FILENAME']).'/app/'));
 
-	$resolver = new \XI\ControllerResolver(dirname($_SERVER['SCRIPT_FILENAME']).'/app/');
+	$resolver = new \XI\Core\ControllerResolver(dirname($_SERVER['SCRIPT_FILENAME']).'/app/');
 	$kernel = new HttpKernel($dispatcher, $resolver);
 
 	$response = $kernel->handle($request);
@@ -217,6 +217,6 @@ function exampleKernel3()
 //exampleKernel1();
 //exampleKernel2();
 exampleKernel3();
-echo "\n".number_format(memory_get_peak_usage() / 1024 / 1024, 4).' MB';
-echo "\n".number_format(microtime(true) - $time, 4).' s';
+//echo "\n".number_format(memory_get_peak_usage() / 1024 / 1024, 4).' MB';
+//echo "\n".number_format(microtime(true) - $time, 4).' s';
 }
