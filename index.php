@@ -199,9 +199,9 @@ function exampleKernel3()
 	$request = Request::createFromGlobals();
 
 	$dispatcher = new EventDispatcher();
-	$dispatcher->addSubscriber(new \XI\ResponseListener());
+	$dispatcher->addSubscriber(new \XI\ResponseListener(dirname($_SERVER['SCRIPT_FILENAME']).'/app/'));
 
-	$resolver = new \XI\ControllerResolver();
+	$resolver = new \XI\ControllerResolver(dirname($_SERVER['SCRIPT_FILENAME']).'/app/');
 	$kernel = new HttpKernel($dispatcher, $resolver);
 
 	$response = $kernel->handle($request);

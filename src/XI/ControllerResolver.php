@@ -11,12 +11,28 @@ use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
 
 class ControllerResolver implements ControllerResolverInterface
 {
+    private $apppath;
+    private $args;
+
+    public function __construct($apppath)
+    {
+        $this->apppath = $apppath;
+    }
+
     public function getController(Request $request)
     {
-        // $pathInfo = $request->getPathInfo();
-        // Do CodeIgniter magic here to find controller based on pathInfo
-        $controller_class = 'ABC\DEF\MyController';
-        return [new $controller_class(), 'second'];
+        $pathInfo = explode('/', trim($request->getPathInfo(), '/'));
+        empty($pathInfo[0]) && $pathInfo[0] = 'index';
+        empty($pathInfo[1]) && $pathInfo[1] = 'index';
+
+        if (file_exists($file = "{$this->apppath}controller/{$pathInfo[0]}.php")) {
+            include($file);
+            $class = $pathInfo[0];
+            $method = $pathInfo[1];
+            $this->args = array_slice($pathInfo, 2);
+        }
+
+        return [new $class(), $method];
     }
 
     public function getArguments(Request $request, $controller)
@@ -31,6 +47,8 @@ class ControllerResolver implements ControllerResolverInterface
                 $arguments[] = $attributes[$param->name];
             } elseif ($param->getClass() && $param->getClass()->isInstance($request)) {
                 $arguments[] = $request;
+            } elseif ($this->args) {
+                $arguments[] = array_shift($this->args);
             } elseif ($param->isDefaultValueAvailable()) {
                 $arguments[] = $param->getDefaultValue();
             } else {
