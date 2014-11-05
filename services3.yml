@@ -1,0 +1,12 @@
+something:
+    hello: this is extension
+
+parameters:
+    name: Yakub
+
+services:
+    abc:
+        class: ABC
+        arguments: [%name%, %message%]
+        calls:
+            - [appendMessage, [Kitty]]

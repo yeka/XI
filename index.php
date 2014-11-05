@@ -48,6 +48,7 @@ class ABC
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 use Symfony\Component\Routing\Loader\YamlFileLoader as YamlRoutingLoader;
@@ -63,6 +64,28 @@ use Symfony\Component\HttpKernel\HttpKernel;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpKernel\Controller\ControllerResolver;
 use Symfony\Component\HttpKernel\EventListener\RouterListener;
+
+class MyExtension implements ExtensionInterface
+{
+	public function load(array $config, ContainerBuilder $container)
+	{
+		$container->setParameter('message', $config[0]['hello']);
+	}
+
+	public function getNamespace()
+	{
+	}
+
+	public function getXsdValidationBasePath()
+	{
+	}
+
+	public function getAlias()
+	{
+		return 'something';
+	}
+
+}
 
 function example1()
 {
@@ -86,6 +109,20 @@ function example2()
 	$container = new ContainerBuilder();
 	$loader = new YamlFileLoader($container, new FileLocator(__DIR__));
 	$loader->load('services.yml');
+
+	$abc = $container->get('abc');
+	echo $abc->hello();
+}
+
+function example3()
+{
+	// Using loader + symfony/config + symfony/yaml
+	$container = new ContainerBuilder();
+	$container->registerExtension(new MyExtension());
+
+	$loader = new YamlFileLoader($container, new FileLocator(__DIR__));
+	$loader->load('services3.yml');
+	$container->compile();
 
 	$abc = $container->get('abc');
 	echo $abc->hello();
@@ -172,10 +209,11 @@ function exampleKernel3()
 
 //example1();
 //example2();
+example3();
 //exampleRouting1();
 //exampleKernel1();
 //exampleKernel2();
-exampleKernel3();
+//exampleKernel3();
 echo "\n".number_format(memory_get_peak_usage() / 1024 / 1024, 4).' MB';
 echo "\n".number_format(microtime(true) - $time, 4).' s';
 }
