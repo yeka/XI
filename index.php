@@ -209,7 +209,7 @@ function exampleKernel3()
 
 	$kernel->terminate($request, $response);
 }
-
+function log_message($a='', $b=''){}
 //example1();
 //example2();
 //example3();
