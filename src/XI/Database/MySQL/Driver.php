@@ -2,14 +2,22 @@
 
 namespace XI\Database\MySQL;
 
-use XI\Database\ActiveRecordDriver;
+use XI\Database\DriverInterface;
 
-class Driver extends ActiveRecordDriver
+class Driver implements DriverInterface
 {
+    /** @var \XI\Database\Driver */
+    protected $parent;
+
+    public function setParent(\XI\Database\Driver $parent)
+    {
+        $this->parent = $parent;
+    }
+
     var $dbdriver = 'mysql';
 
     // The character used for escaping
-    var	$_escape_char = '`';
+    var $_escape_char = '`';
 
     // clause and character used for LIKE escape sequences - not used in MySQL
     var $_like_escape_str = '';
@@ -36,17 +44,16 @@ class Driver extends ActiveRecordDriver
     /**
      * Non-persistent database connection
      *
-     * @access	private called by the base class
-     * @return	resource
+     * @access    private called by the base class
+     * @return    resource
      */
-    function db_connect()
+    public function connect()
     {
-        if ($this->port != '')
-        {
-            $this->hostname .= ':'.$this->port;
+        if ($this->parent->port != '') {
+            $this->parent->hostname .= ':' . $this->parent->port;
         }
 
-        return @mysql_connect($this->hostname, $this->username, $this->password, TRUE);
+        return @mysql_connect($this->parent->hostname, $this->parent->username, $this->parent->password, TRUE);
     }
 
     // --------------------------------------------------------------------
@@ -54,17 +61,16 @@ class Driver extends ActiveRecordDriver
     /**
      * Persistent database connection
      *
-     * @access	private called by the base class
-     * @return	resource
+     * @access    private called by the base class
+     * @return    resource
      */
-    function db_pconnect()
+    public function persistentConnect()
     {
-        if ($this->port != '')
-        {
-            $this->hostname .= ':'.$this->port;
+        if ($this->parent->port != '') {
+            $this->parent->hostname .= ':' . $this->parent->port;
         }
 
-        return @mysql_pconnect($this->hostname, $this->username, $this->password);
+        return @mysql_pconnect($this->parent->hostname, $this->parent->username, $this->parent->password);
     }
 
     // --------------------------------------------------------------------
@@ -75,14 +81,13 @@ class Driver extends ActiveRecordDriver
      * Keep / reestablish the db connection if no queries have been
      * sent for a length of time exceeding the server's idle timeout
      *
-     * @access	public
-     * @return	void
+     * @access    public
+     * @return    void
      */
-    function reconnect()
+    public function reConnect()
     {
-        if (mysql_ping($this->conn_id) === FALSE)
-        {
-            $this->conn_id = FALSE;
+        if (mysql_ping($this->parent->conn_id) === FALSE) {
+            $this->parent->conn_id = FALSE;
         }
     }
 
@@ -91,12 +96,12 @@ class Driver extends ActiveRecordDriver
     /**
      * Select the database
      *
-     * @access	private called by the base class
-     * @return	resource
+     * @access    private called by the base class
+     * @return    resource
      */
-    function db_select()
+    public function selectDatabase()
     {
-        return @mysql_select_db($this->database, $this->conn_id);
+        return @mysql_select_db($this->parent->database, $this->parent->conn_id);
     }
 
     // --------------------------------------------------------------------
@@ -104,26 +109,22 @@ class Driver extends ActiveRecordDriver
     /**
      * Set client character set
      *
-     * @access	public
-     * @param	string
-     * @param	string
-     * @return	resource
+     * @access    public
+     * @param    string
+     * @param    string
+     * @return    resource
      */
-    function db_set_charset($charset, $collation)
+    public function setCharset($charset, $collation)
     {
-        if ( ! isset($this->use_set_names))
-        {
+        if (!isset($this->use_set_names)) {
             // mysql_set_charset() requires PHP >= 5.2.3 and MySQL >= 5.0.7, use SET NAMES as fallback
             $this->use_set_names = (version_compare(PHP_VERSION, '5.2.3', '>=') && version_compare(mysql_get_server_info(), '5.0.7', '>=')) ? FALSE : TRUE;
         }
 
-        if ($this->use_set_names === TRUE)
-        {
-            return @mysql_query("SET NAMES '".$this->escape_str($charset)."' COLLATE '".$this->escape_str($collation)."'", $this->conn_id);
-        }
-        else
-        {
-            return @mysql_set_charset($charset, $this->conn_id);
+        if ($this->use_set_names === TRUE) {
+            return @mysql_query("SET NAMES '" . $this->escape_str($charset) . "' COLLATE '" . $this->escape_str($collation) . "'", $this->parent->conn_id);
+        } else {
+            return @mysql_set_charset($charset, $this->parent->conn_id);
         }
     }
 
@@ -132,10 +133,10 @@ class Driver extends ActiveRecordDriver
     /**
      * Version number query string
      *
-     * @access	public
-     * @return	string
+     * @access    public
+     * @return    string
      */
-    function _version()
+    public function version()
     {
         return "SELECT version() AS ver";
     }
@@ -145,14 +146,14 @@ class Driver extends ActiveRecordDriver
     /**
      * Execute the query
      *
-     * @access	private called by the base class
-     * @param	string	an SQL query
-     * @return	resource
+     * @access    private called by the base class
+     * @param    string    an SQL query
+     * @return    resource
      */
-    function _execute($sql)
+    public function execute($sql)
     {
-        $sql = $this->_prep_query($sql);
-        return @mysql_query($sql, $this->conn_id);
+        $sql = $this->prepareQuery($sql);
+        return @mysql_query($sql, $this->parent->conn_id);
     }
 
     // --------------------------------------------------------------------
@@ -162,18 +163,16 @@ class Driver extends ActiveRecordDriver
      *
      * If needed, each database adapter can prep the query string
      *
-     * @access	private called by execute()
-     * @param	string	an SQL query
-     * @return	string
+     * @access    private called by execute()
+     * @param    string    an SQL query
+     * @return    string
      */
-    function _prep_query($sql)
+    public function prepareQuery($sql)
     {
         // "DELETE FROM TABLE" returns 0 affected rows This hack modifies
         // the query so that it returns the number of affected rows
-        if ($this->delete_hack === TRUE)
-        {
-            if (preg_match('/^\s*DELETE\s+FROM\s+(\S+)\s*$/i', $sql))
-            {
+        if ($this->delete_hack === TRUE) {
+            if (preg_match('/^\s*DELETE\s+FROM\s+(\S+)\s*$/i', $sql)) {
                 $sql = preg_replace("/^\s*DELETE\s+FROM\s+(\S+)\s*$/", "DELETE FROM \\1 WHERE 1=1", $sql);
             }
         }
@@ -186,19 +185,17 @@ class Driver extends ActiveRecordDriver
     /**
      * Begin Transaction
      *
-     * @access	public
-     * @return	bool
+     * @access    public
+     * @return    bool
      */
-    function trans_begin($test_mode = FALSE)
+    public function transactionBegin($test_mode = FALSE)
     {
-        if ( ! $this->trans_enabled)
-        {
+        if (!$this->trans_enabled) {
             return TRUE;
         }
 
         // When transactions are nested we only begin/commit/rollback the outermost ones
-        if ($this->_trans_depth > 0)
-        {
+        if ($this->_trans_depth > 0) {
             return TRUE;
         }
 
@@ -207,8 +204,8 @@ class Driver extends ActiveRecordDriver
         // even if the queries produce a successful result.
         $this->_trans_failure = ($test_mode === TRUE) ? TRUE : FALSE;
 
-        $this->simple_query('SET AUTOCOMMIT=0');
-        $this->simple_query('START TRANSACTION'); // can also be BEGIN or BEGIN WORK
+        $this->parent->simpleQuery('SET AUTOCOMMIT=0');
+        $this->parent->simpleQuery('START TRANSACTION'); // can also be BEGIN or BEGIN WORK
         return TRUE;
     }
 
@@ -217,24 +214,22 @@ class Driver extends ActiveRecordDriver
     /**
      * Commit Transaction
      *
-     * @access	public
-     * @return	bool
+     * @access    public
+     * @return    bool
      */
-    function trans_commit()
+    public function transactionCommit()
     {
-        if ( ! $this->trans_enabled)
-        {
+        if (!$this->trans_enabled) {
             return TRUE;
         }
 
         // When transactions are nested we only begin/commit/rollback the outermost ones
-        if ($this->_trans_depth > 0)
-        {
+        if ($this->_trans_depth > 0) {
             return TRUE;
         }
 
-        $this->simple_query('COMMIT');
-        $this->simple_query('SET AUTOCOMMIT=1');
+        $this->parent->simpleQuery('COMMIT');
+        $this->parent->simpleQuery('SET AUTOCOMMIT=1');
         return TRUE;
     }
 
@@ -243,24 +238,22 @@ class Driver extends ActiveRecordDriver
     /**
      * Rollback Transaction
      *
-     * @access	public
-     * @return	bool
+     * @access    public
+     * @return    bool
      */
-    function trans_rollback()
+    public function transactionRollback()
     {
-        if ( ! $this->trans_enabled)
-        {
+        if (!$this->trans_enabled) {
             return TRUE;
         }
 
         // When transactions are nested we only begin/commit/rollback the outermost ones
-        if ($this->_trans_depth > 0)
-        {
+        if ($this->_trans_depth > 0) {
             return TRUE;
         }
 
-        $this->simple_query('ROLLBACK');
-        $this->simple_query('SET AUTOCOMMIT=1');
+        $this->parent->simpleQuery('ROLLBACK');
+        $this->parent->simpleQuery('SET AUTOCOMMIT=1');
         return TRUE;
     }
 
@@ -269,39 +262,31 @@ class Driver extends ActiveRecordDriver
     /**
      * Escape String
      *
-     * @access	public
-     * @param	string
-     * @param	bool	whether or not the string will be used in a LIKE condition
-     * @return	string
+     * @access    public
+     * @param    string
+     * @param    bool    whether or not the string will be used in a LIKE condition
+     * @return    string
      */
-    function escape_str($str, $like = FALSE)
+    public function escape($str, $like = FALSE)
     {
-        if (is_array($str))
-        {
-            foreach ($str as $key => $val)
-            {
+        if (is_array($str)) {
+            foreach ($str as $key => $val) {
                 $str[$key] = $this->escape_str($val, $like);
             }
 
             return $str;
         }
 
-        if (function_exists('mysql_real_escape_string') AND is_resource($this->conn_id))
-        {
-            $str = mysql_real_escape_string($str, $this->conn_id);
-        }
-        elseif (function_exists('mysql_escape_string'))
-        {
-            $str = mysql_escape_string($str);
-        }
-        else
-        {
+        if (function_exists('mysql_real_escape_string') AND is_resource($this->parent->conn_id)) {
+            $str = mysql_real_escape_string($str, $this->parent->conn_id);
+        } elseif (function_exists('mysql_escape_string')) {
+            $str = mysql_real_escape_string($str);
+        } else {
             $str = addslashes($str);
         }
 
         // escape LIKE condition wildcards
-        if ($like === TRUE)
-        {
+        if ($like === TRUE) {
             $str = str_replace(array('%', '_'), array('\\%', '\\_'), $str);
         }
 
@@ -313,12 +298,12 @@ class Driver extends ActiveRecordDriver
     /**
      * Affected Rows
      *
-     * @access	public
-     * @return	integer
+     * @access    public
+     * @return    integer
      */
-    function affected_rows()
+    public function affectedRows()
     {
-        return @mysql_affected_rows($this->conn_id);
+        return @mysql_affected_rows($this->parent->conn_id);
     }
 
     // --------------------------------------------------------------------
@@ -326,12 +311,12 @@ class Driver extends ActiveRecordDriver
     /**
      * Insert ID
      *
-     * @access	public
-     * @return	integer
+     * @access    public
+     * @return    integer
      */
-    function insert_id()
+    public function insertId()
     {
-        return @mysql_insert_id($this->conn_id);
+        return @mysql_insert_id($this->parent->conn_id);
     }
 
     // --------------------------------------------------------------------
@@ -342,27 +327,25 @@ class Driver extends ActiveRecordDriver
      * Generates a platform-specific query string that counts all records in
      * the specified database
      *
-     * @access	public
-     * @param	string
-     * @return	string
+     * @access    public
+     * @param    string
+     * @return    string
      */
-    function count_all($table = '')
+    public function countAll($table = '')
     {
-        if ($table == '')
-        {
+        if ($table == '') {
             return 0;
         }
 
         $query = $this->query($this->_count_string . $this->_protect_identifiers('numrows') . " FROM " . $this->_protect_identifiers($table, TRUE, NULL, FALSE));
 
-        if ($query->num_rows() == 0)
-        {
+        if ($query->num_rows() == 0) {
             return 0;
         }
 
         $row = $query->row();
         $this->_reset_select();
-        return (int) $row->numrows;
+        return (int)$row->numrows;
     }
 
     // --------------------------------------------------------------------
@@ -372,17 +355,16 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific query string so that the table names can be fetched
      *
-     * @access	private
-     * @param	boolean
-     * @return	string
+     * @access    private
+     * @param    boolean
+     * @return    string
      */
-    function _list_tables($prefix_limit = FALSE)
+    public function listTables($prefix_limit = FALSE)
     {
-        $sql = "SHOW TABLES FROM ".$this->_escape_char.$this->database.$this->_escape_char;
+        $sql = "SHOW TABLES FROM " . $this->_escape_char . $this->database . $this->_escape_char;
 
-        if ($prefix_limit !== FALSE AND $this->dbprefix != '')
-        {
-            $sql .= " LIKE '".$this->escape_like_str($this->dbprefix)."%'";
+        if ($prefix_limit !== FALSE AND $this->dbprefix != '') {
+            $sql .= " LIKE '" . $this->parent->escapeLikeStr($this->dbprefix) . "%'";
         }
 
         return $sql;
@@ -395,13 +377,13 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific query string so that the column names can be fetched
      *
-     * @access	public
-     * @param	string	the table name
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @return    string
      */
-    function _list_columns($table = '')
+    public function listColumns($table = '')
     {
-        return "SHOW COLUMNS FROM ".$this->_protect_identifiers($table, TRUE, NULL, FALSE);
+        return "SHOW COLUMNS FROM " . $this->parent->_protect_identifiers($table, TRUE, NULL, FALSE);
     }
 
     // --------------------------------------------------------------------
@@ -411,13 +393,13 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific query so that the column data can be retrieved
      *
-     * @access	public
-     * @param	string	the table name
-     * @return	object
+     * @access    public
+     * @param    string    the table name
+     * @return    object
      */
-    function _field_data($table)
+    public function fieldData($table)
     {
-        return "DESCRIBE ".$table;
+        return "DESCRIBE " . $table;
     }
 
     // --------------------------------------------------------------------
@@ -425,12 +407,12 @@ class Driver extends ActiveRecordDriver
     /**
      * The error message string
      *
-     * @access	private
-     * @return	string
+     * @access    private
+     * @return    string
      */
-    function _error_message()
+    public function errorMessage()
     {
-        return mysql_error($this->conn_id);
+        return mysql_error($this->parent->conn_id);
     }
 
     // --------------------------------------------------------------------
@@ -438,12 +420,12 @@ class Driver extends ActiveRecordDriver
     /**
      * The error message number
      *
-     * @access	private
-     * @return	integer
+     * @access    private
+     * @return    integer
      */
-    function _error_number()
+    public function errorNumber()
     {
-        return mysql_errno($this->conn_id);
+        return mysql_errno($this->parent->conn_id);
     }
 
     // --------------------------------------------------------------------
@@ -453,39 +435,33 @@ class Driver extends ActiveRecordDriver
      *
      * This function escapes column and table names
      *
-     * @access	private
-     * @param	string
-     * @return	string
+     * @access    private
+     * @param    string
+     * @return    string
      */
-    function _escape_identifiers($item)
+    public function escapeIdentifiers($item)
     {
-        if ($this->_escape_char == '')
-        {
+        if ($this->_escape_char == '') {
             return $item;
         }
 
-        foreach ($this->_reserved_identifiers as $id)
-        {
-            if (strpos($item, '.'.$id) !== FALSE)
-            {
-                $str = $this->_escape_char. str_replace('.', $this->_escape_char.'.', $item);
+        foreach ($this->parent->_reserved_identifiers as $id) {
+            if (strpos($item, '.' . $id) !== FALSE) {
+                $str = $this->_escape_char . str_replace('.', $this->_escape_char . '.', $item);
 
                 // remove duplicates if the user already included the escape
-                return preg_replace('/['.$this->_escape_char.']+/', $this->_escape_char, $str);
+                return preg_replace('/[' . $this->_escape_char . ']+/', $this->_escape_char, $str);
             }
         }
 
-        if (strpos($item, '.') !== FALSE)
-        {
-            $str = $this->_escape_char.str_replace('.', $this->_escape_char.'.'.$this->_escape_char, $item).$this->_escape_char;
-        }
-        else
-        {
-            $str = $this->_escape_char.$item.$this->_escape_char;
+        if (strpos($item, '.') !== FALSE) {
+            $str = $this->_escape_char . str_replace('.', $this->_escape_char . '.' . $this->_escape_char, $item) . $this->_escape_char;
+        } else {
+            $str = $this->_escape_char . $item . $this->_escape_char;
         }
 
         // remove duplicates if the user already included the escape
-        return preg_replace('/['.$this->_escape_char.']+/', $this->_escape_char, $str);
+        return preg_replace('/[' . $this->_escape_char . ']+/', $this->_escape_char, $str);
     }
 
     // --------------------------------------------------------------------
@@ -496,18 +472,17 @@ class Driver extends ActiveRecordDriver
      * This function implicitly groups FROM tables so there is no confusion
      * about operator precedence in harmony with SQL standards
      *
-     * @access	public
-     * @param	type
-     * @return	type
+     * @access    public
+     * @param    type
+     * @return    type
      */
-    function _from_tables($tables)
+    public function fromTables($tables)
     {
-        if ( ! is_array($tables))
-        {
+        if (!is_array($tables)) {
             $tables = array($tables);
         }
 
-        return '('.implode(', ', $tables).')';
+        return '(' . implode(', ', $tables) . ')';
     }
 
     // --------------------------------------------------------------------
@@ -517,15 +492,15 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific insert string from the supplied data
      *
-     * @access	public
-     * @param	string	the table name
-     * @param	array	the insert keys
-     * @param	array	the insert values
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @param    array    the insert keys
+     * @param    array    the insert values
+     * @return    string
      */
-    function _insert($table, $keys, $values)
+    public function insert($table, $keys, $values)
     {
-        return "INSERT INTO ".$table." (".implode(', ', $keys).") VALUES (".implode(', ', $values).")";
+        return "INSERT INTO " . $table . " (" . implode(', ', $keys) . ") VALUES (" . implode(', ', $values) . ")";
     }
 
     // --------------------------------------------------------------------
@@ -536,15 +511,15 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific replace string from the supplied data
      *
-     * @access	public
-     * @param	string	the table name
-     * @param	array	the insert keys
-     * @param	array	the insert values
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @param    array    the insert keys
+     * @param    array    the insert values
+     * @return    string
      */
-    function _replace($table, $keys, $values)
+    public function replace($table, $keys, $values)
     {
-        return "REPLACE INTO ".$table." (".implode(', ', $keys).") VALUES (".implode(', ', $values).")";
+        return "REPLACE INTO " . $table . " (" . implode(', ', $keys) . ") VALUES (" . implode(', ', $values) . ")";
     }
 
     // --------------------------------------------------------------------
@@ -554,15 +529,15 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific insert string from the supplied data
      *
-     * @access	public
-     * @param	string	the table name
-     * @param	array	the insert keys
-     * @param	array	the insert values
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @param    array    the insert keys
+     * @param    array    the insert values
+     * @return    string
      */
-    function _insert_batch($table, $keys, $values)
+    public function insertBatch($table, $keys, $values)
     {
-        return "INSERT INTO ".$table." (".implode(', ', $keys).") VALUES ".implode(', ', $values);
+        return "INSERT INTO " . $table . " (" . implode(', ', $keys) . ") VALUES " . implode(', ', $values);
     }
 
     // --------------------------------------------------------------------
@@ -573,30 +548,29 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific update string from the supplied data
      *
-     * @access	public
-     * @param	string	the table name
-     * @param	array	the update data
-     * @param	array	the where clause
-     * @param	array	the orderby clause
-     * @param	array	the limit clause
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @param    array    the update data
+     * @param    array    the where clause
+     * @param    array    the orderby clause
+     * @param    array    the limit clause
+     * @return    string
      */
-    function _update($table, $values, $where, $orderby = array(), $limit = FALSE)
+    public function update($table, $values, $where, $orderby = array(), $limit = FALSE)
     {
-        foreach ($values as $key => $val)
-        {
+        foreach ($values as $key => $val) {
             $valstr[] = $key . ' = ' . $val;
         }
 
-        $limit = ( ! $limit) ? '' : ' LIMIT '.$limit;
+        $limit = (!$limit) ? '' : ' LIMIT ' . $limit;
 
-        $orderby = (count($orderby) >= 1)?' ORDER BY '.implode(", ", $orderby):'';
+        $orderby = (count($orderby) >= 1) ? ' ORDER BY ' . implode(", ", $orderby) : '';
 
-        $sql = "UPDATE ".$table." SET ".implode(', ', $valstr);
+        $sql = "UPDATE " . $table . " SET " . implode(', ', $valstr);
 
-        $sql .= ($where != '' AND count($where) >=1) ? " WHERE ".implode(" ", $where) : '';
+        $sql .= ($where != '' AND count($where) >= 1) ? " WHERE " . implode(" ", $where) : '';
 
-        $sql .= $orderby.$limit;
+        $sql .= $orderby . $limit;
 
         return $sql;
     }
@@ -609,47 +583,42 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific batch update string from the supplied data
      *
-     * @access	public
-     * @param	string	the table name
-     * @param	array	the update data
-     * @param	array	the where clause
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @param    array    the update data
+     * @param    array    the where clause
+     * @return    string
      */
-    function _update_batch($table, $values, $index, $where = NULL)
+    public function updateBatch($table, $values, $index, $where = NULL)
     {
         $ids = array();
-        $where = ($where != '' AND count($where) >=1) ? implode(" ", $where).' AND ' : '';
+        $where = ($where != '' AND count($where) >= 1) ? implode(" ", $where) . ' AND ' : '';
 
-        foreach ($values as $key => $val)
-        {
+        foreach ($values as $key => $val) {
             $ids[] = $val[$index];
 
-            foreach (array_keys($val) as $field)
-            {
-                if ($field != $index)
-                {
-                    $final[$field][] =  'WHEN '.$index.' = '.$val[$index].' THEN '.$val[$field];
+            foreach (array_keys($val) as $field) {
+                if ($field != $index) {
+                    $final[$field][] = 'WHEN ' . $index . ' = ' . $val[$index] . ' THEN ' . $val[$field];
                 }
             }
         }
 
-        $sql = "UPDATE ".$table." SET ";
+        $sql = "UPDATE " . $table . " SET ";
         $cases = '';
 
-        foreach ($final as $k => $v)
-        {
-            $cases .= $k.' = CASE '."\n";
-            foreach ($v as $row)
-            {
-                $cases .= $row."\n";
+        foreach ($final as $k => $v) {
+            $cases .= $k . ' = CASE ' . "\n";
+            foreach ($v as $row) {
+                $cases .= $row . "\n";
             }
 
-            $cases .= 'ELSE '.$k.' END, ';
+            $cases .= 'ELSE ' . $k . ' END, ';
         }
 
         $sql .= substr($cases, 0, -2);
 
-        $sql .= ' WHERE '.$where.$index.' IN ('.implode(',', $ids).')';
+        $sql .= ' WHERE ' . $where . $index . ' IN (' . implode(',', $ids) . ')';
 
         return $sql;
     }
@@ -664,13 +633,13 @@ class Driver extends ActiveRecordDriver
      * If the database does not support the truncate() command
      * This function maps to "DELETE FROM table"
      *
-     * @access	public
-     * @param	string	the table name
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @return    string
      */
-    function _truncate($table)
+    public function truncate($table)
     {
-        return "TRUNCATE ".$table;
+        return "TRUNCATE " . $table;
     }
 
     // --------------------------------------------------------------------
@@ -680,31 +649,29 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific delete string from the supplied data
      *
-     * @access	public
-     * @param	string	the table name
-     * @param	array	the where clause
-     * @param	string	the limit clause
-     * @return	string
+     * @access    public
+     * @param    string    the table name
+     * @param    array    the where clause
+     * @param    string    the limit clause
+     * @return    string
      */
-    function _delete($table, $where = array(), $like = array(), $limit = FALSE)
+    public function delete($table, $where = array(), $like = array(), $limit = FALSE)
     {
         $conditions = '';
 
-        if (count($where) > 0 OR count($like) > 0)
-        {
+        if (count($where) > 0 OR count($like) > 0) {
             $conditions = "\nWHERE ";
             $conditions .= implode("\n", $this->ar_where);
 
-            if (count($where) > 0 && count($like) > 0)
-            {
+            if (count($where) > 0 && count($like) > 0) {
                 $conditions .= " AND ";
             }
             $conditions .= implode("\n", $like);
         }
 
-        $limit = ( ! $limit) ? '' : ' LIMIT '.$limit;
+        $limit = (!$limit) ? '' : ' LIMIT ' . $limit;
 
-        return "DELETE FROM ".$table.$conditions.$limit;
+        return "DELETE FROM " . $table . $conditions . $limit;
     }
 
     // --------------------------------------------------------------------
@@ -714,24 +681,21 @@ class Driver extends ActiveRecordDriver
      *
      * Generates a platform-specific LIMIT clause
      *
-     * @access	public
-     * @param	string	the sql query string
-     * @param	integer	the number of rows to limit the query to
-     * @param	integer	the offset value
-     * @return	string
+     * @access    public
+     * @param    string    the sql query string
+     * @param    integer    the number of rows to limit the query to
+     * @param    integer    the offset value
+     * @return    string
      */
-    function _limit($sql, $limit, $offset)
+    public function limit($sql, $limit, $offset)
     {
-        if ($offset == 0)
-        {
+        if ($offset == 0) {
             $offset = '';
-        }
-        else
-        {
+        } else {
             $offset .= ", ";
         }
 
-        return $sql."LIMIT ".$offset.$limit;
+        return $sql . "LIMIT " . $offset . $limit;
     }
 
     // --------------------------------------------------------------------
@@ -739,11 +703,11 @@ class Driver extends ActiveRecordDriver
     /**
      * Close DB Connection
      *
-     * @access	public
-     * @param	resource
-     * @return	void
+     * @access    public
+     * @param    resource
+     * @return    void
      */
-    function _close($conn_id)
+    public function close($conn_id)
     {
         @mysql_close($conn_id);
     }

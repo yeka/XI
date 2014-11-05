@@ -8,6 +8,9 @@ namespace XI\Database;
 
 class Driver
 {
+    /** @var DriverInterface */
+    protected $driver;
+
     var $username;
     var $password;
     var $hostname;
@@ -66,6 +69,12 @@ class Driver
         log_message('debug', 'Database Driver Class Initialized');
     }
 
+    public function setDriver(DriverInterface $driver)
+    {
+        $this->driver = $driver;
+        $this->driver->setParent($this);
+    }
+
     // --------------------------------------------------------------------
 
     /**
@@ -86,7 +95,7 @@ class Driver
         // ----------------------------------------------------------------
 
         // Connect to the database and set the connection ID
-        $this->conn_id = ($this->pconnect == FALSE) ? $this->db_connect() : $this->db_pconnect();
+        $this->conn_id = ($this->pconnect == FALSE) ? $this->driver->connect() : $this->driver->persistentConnect();
 
         // No connection resource?  Throw an error
         if (!$this->conn_id) {
@@ -102,7 +111,7 @@ class Driver
 
         // Select the DB... assuming a database name is specified in the config file
         if ($this->database != '') {
-            if (!$this->db_select()) {
+            if (!$this->driver->selectDatabase()) {
                 log_message('error', 'Unable to select database: ' . $this->database);
 
                 if ($this->db_debug) {
@@ -111,7 +120,7 @@ class Driver
                 return FALSE;
             } else {
                 // We've selected the DB. Now we set the character set
-                if (!$this->db_set_charset($this->char_set, $this->dbcollat)) {
+                if (!$this->driver->setCharset($this->char_set, $this->dbcollat)) {
                     return FALSE;
                 }
 
@@ -247,7 +256,7 @@ class Driver
         $time_start = list($sm, $ss) = explode(' ', microtime());
 
         // Run the Query
-        if (FALSE === ($this->result_id = $this->simple_query($sql))) {
+        if (FALSE === ($this->result_id = $this->simpleQuery($sql))) {
             if ($this->save_queries == TRUE) {
                 $this->query_times[] = 0;
             }
@@ -380,13 +389,13 @@ class Driver
      * @param    string    the sql query
      * @return    mixed
      */
-    function simple_query($sql)
+    public function simpleQuery($sql)
     {
         if (!$this->conn_id) {
             $this->initialize();
         }
 
-        return $this->_execute($sql);
+        return $this->driver->execute($sql);
     }
 
     // --------------------------------------------------------------------
@@ -629,7 +638,7 @@ class Driver
      * @param    string
      * @return    mixed
      */
-    function escape_like_str($str)
+    function escapeLikeStr($str)
     {
         return $this->escape_str($str, TRUE);
     }
@@ -806,7 +815,7 @@ class Driver
         $values = array();
 
         foreach ($data as $key => $val) {
-            $fields[] = $this->_escape_identifiers($key);
+            $fields[] = $this->driver->escapeIdentifiers($key);
             $values[] = $this->escape($val);
         }
 
@@ -1020,7 +1029,7 @@ class Driver
     function close()
     {
         if (is_resource($this->conn_id) OR is_object($this->conn_id)) {
-            $this->_close($this->conn_id);
+            $this->driver->close($this->conn_id);
         }
         $this->conn_id = FALSE;
     }
@@ -1165,7 +1174,7 @@ class Driver
                 if ($protect_identifiers === TRUE) {
                     foreach ($parts as $key => $val) {
                         if (!in_array($val, $this->_reserved_identifiers)) {
-                            $parts[$key] = $this->_escape_identifiers($val);
+                            $parts[$key] = $this->driver->escapeIdentifiers($val);
                         }
                     }
 
@@ -1214,7 +1223,7 @@ class Driver
             }
 
             if ($protect_identifiers === TRUE) {
-                $item = $this->_escape_identifiers($item);
+                $item = $this->driver->escapeIdentifiers($item);
             }
 
             return $item . $alias;
@@ -1234,7 +1243,7 @@ class Driver
         }
 
         if ($protect_identifiers === TRUE AND !in_array($item, $this->_reserved_identifiers)) {
-            $item = $this->_escape_identifiers($item);
+            $item = $this->driver->escapeIdentifiers($item);
         }
 
         return $item . $alias;

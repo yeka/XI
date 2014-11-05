@@ -67,4 +67,6 @@ interface DriverInterface
 
     public function close($conn_id);
 
+    public function setParent(Driver $parent);
 }
+

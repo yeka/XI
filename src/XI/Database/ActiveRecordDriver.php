@@ -597,7 +597,7 @@ class ActiveRecordDriver extends Driver
 
             $prefix = (count($this->ar_like) == 0) ? '' : $type;
 
-            $v = $this->escape_like_str($v);
+            $v = $this->escapeLikeStr($v);
 
             if ($side == 'none') {
                 $like_statement = $prefix . " $k $not LIKE '{$v}'";
@@ -1519,7 +1519,7 @@ class ActiveRecordDriver extends Driver
         if (count($this->ar_from) > 0) {
             $sql .= "\nFROM ";
 
-            $sql .= $this->_from_tables($this->ar_from);
+            $sql .= $this->driver->fromTables($this->ar_from);
         }
 
         // ----------------------------------------------------------------
@@ -1592,7 +1592,7 @@ class ActiveRecordDriver extends Driver
 
         if (is_numeric($this->ar_limit)) {
             $sql .= "\n";
-            $sql = $this->_limit($sql, $this->ar_limit, $this->ar_offset);
+            $sql = $this->driver->limit($sql, $this->ar_limit, $this->ar_offset);
         }
 
         return $sql;

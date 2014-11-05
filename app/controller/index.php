@@ -26,7 +26,10 @@ class Index extends \XI\Controller
             'stricton' => FALSE,
         ];
 
-        $model = new \XI\Database\MySQL\Driver($db_config);
+        $driver = new \XI\Database\MySQL\Driver();
+        $model = new \XI\Database\ActiveRecordDriver($db_config);
+        $model->setDriver($driver);
+
         $query = $model->get('user', 2, 0);
         foreach ($query->result() as $row) {
             print_r($row);
