@@ -12,7 +12,7 @@ namespace ABC\DEF {
 
 		public function second(Request $r)
 		{
-			return new Response($r->get('a', 'a'));
+			echo $r->get('a', 'a');
 		}
 	}
 }
@@ -199,6 +199,7 @@ function exampleKernel3()
 	$request = Request::createFromGlobals();
 
 	$dispatcher = new EventDispatcher();
+	$dispatcher->addSubscriber(new \XI\ResponseListener());
 
 	$resolver = new \XI\ControllerResolver();
 	$kernel = new HttpKernel($dispatcher, $resolver);
@@ -211,11 +212,11 @@ function exampleKernel3()
 
 //example1();
 //example2();
-example3();
+//example3();
 //exampleRouting1();
 //exampleKernel1();
 //exampleKernel2();
-//exampleKernel3();
+exampleKernel3();
 echo "\n".number_format(memory_get_peak_usage() / 1024 / 1024, 4).' MB';
 echo "\n".number_format(microtime(true) - $time, 4).' s';
 }
