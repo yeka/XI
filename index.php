@@ -69,7 +69,7 @@ class MyExtension implements ExtensionInterface
 {
 	public function load(array $config, ContainerBuilder $container)
 	{
-		$container->setParameter('message', $config[0]['hello']);
+		echo "It's loaded. ";
 	}
 
 	public function getNamespace()
@@ -118,7 +118,9 @@ function example3()
 {
 	// Using loader + symfony/config + symfony/yaml
 	$container = new ContainerBuilder();
-	$container->registerExtension(new MyExtension());
+	$extension = new MyExtension();
+	$container->registerExtension($extension);
+	$container->loadFromExtension($extension->getAlias()); //Make sure extension is loaded
 
 	$loader = new YamlFileLoader($container, new FileLocator(__DIR__));
 	$loader->load('services3.yml');
