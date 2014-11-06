@@ -1,12 +1,26 @@
 <?php
 
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
+
 class Index extends \XI\Controller
 {
     public function __construct()
     {
     }
 
-    public function index($a, $b)
+    public function index(Request $request)
+    {
+        echo $request->getClientIp()."<br/>";
+        echo $request->headers->get('User-Agent')."<br/>";
+        $session = new Session();
+        $session->start();
+        $a = $session->getFlashBag()->get('something');
+        print_r($a);
+        $session->getFlashBag()->add('something', 'abuba');
+    }
+
+    public function database($a = 'a', $b = 'b')
     {
         $db_config = [
             'hostname' => 'localhost',
@@ -34,4 +48,4 @@ class Index extends \XI\Controller
 
         return $this->view('home', ['nama' => "Yakub $a $b"]);
     }
-} 
+}
