@@ -1,0 +1,20 @@
+parameters:
+    app_path: ''
+
+services:
+    controller.resolver:
+        class: XI\Core\ControllerResolver
+        arguments: [@service_container, %app_path%]
+
+    response.listener:
+        class: XI\Core\ResponseListener
+        arguments: [%app_path%]
+
+    dispatcher:
+        class: Symfony\Component\EventDispatcher\EventDispatcher
+        calls:
+            - [addSubscriber, [@response.listener]]
+
+    kernel:
+        class: Symfony\Component\HttpKernel\HttpKernel
+        arguments: [@dispatcher, @controller.resolver]
