@@ -195,13 +195,18 @@ function exampleKernel2()
 
 function exampleKernel3()
 {
-	$_GET['a'] = 'b';
+	$app_path = dirname($_SERVER['SCRIPT_FILENAME']).'/app/';
+	$container = new ContainerBuilder();
+	$loader = new YamlFileLoader($container, new FileLocator(__DIR__));
+	$loader->load($app_path.'config/config.yml');
+	$container->compile();
+
 	$request = Request::createFromGlobals();
 
 	$dispatcher = new EventDispatcher();
-	$dispatcher->addSubscriber(new \XI\Core\ResponseListener(dirname($_SERVER['SCRIPT_FILENAME']).'/app/'));
+	$dispatcher->addSubscriber(new \XI\Core\ResponseListener($app_path));
 
-	$resolver = new \XI\Core\ControllerResolver(dirname($_SERVER['SCRIPT_FILENAME']).'/app/');
+	$resolver = new \XI\Core\ControllerResolver($container, $app_path);
 	$kernel = new HttpKernel($dispatcher, $resolver);
 
 	$response = $kernel->handle($request);
@@ -209,6 +214,7 @@ function exampleKernel3()
 
 	$kernel->terminate($request, $response);
 }
+
 function log_message($a='', $b=''){}
 //example1();
 //example2();

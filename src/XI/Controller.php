@@ -2,6 +2,7 @@
 
 namespace XI;
 
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -12,9 +13,17 @@ class Controller
 {
     private $apppath;
 
+    /** @var ContainerInterface */
+    protected $container;
+
     public function setAppPath($apppath)
     {
         $this->apppath = $apppath;
+    }
+
+    public function setContainer(ContainerInterface $container)
+    {
+        $this->container = $container;
     }
 
     public function view($template, $data)

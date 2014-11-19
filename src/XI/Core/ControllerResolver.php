@@ -2,6 +2,7 @@
 
 namespace XI\Core;
 
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
 
@@ -13,10 +14,12 @@ class ControllerResolver implements ControllerResolverInterface
 {
     private $apppath;
     private $args;
+    protected $container;
 
-    public function __construct($apppath)
+    public function __construct(ContainerInterface $container, $apppath)
     {
         $this->apppath = $apppath;
+        $this->container = $container;
     }
 
     public function getController(Request $request)
@@ -32,7 +35,11 @@ class ControllerResolver implements ControllerResolverInterface
             $this->args = array_slice($pathInfo, 2);
         }
 
-        return [new $class(), $method];
+        $controller = new $class();
+        if ($controller instanceof \XI\Controller) {
+            $controller->setContainer($this->container);
+        }
+        return [$controller, $method];
     }
 
     public function getArguments(Request $request, $controller)

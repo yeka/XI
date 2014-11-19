@@ -2,12 +2,16 @@
 
 class Index extends \XI\Controller
 {
+    /**
+     * This is here so that "index" method will not become the constructor
+     */
     public function __construct()
     {
     }
 
-    public function index($a, $b)
+    public function index($a = 'a', $b = 'b')
     {
+        echo $this->container->getParameter('a');
         $db_config = [
             'hostname' => 'localhost',
             'username' => 'root',
