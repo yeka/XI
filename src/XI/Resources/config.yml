@@ -18,3 +18,10 @@ services:
     kernel:
         class: Symfony\Component\HttpKernel\HttpKernel
         arguments: [@dispatcher, @controller.resolver]
+
+    templating.php:
+        class: XI\Templating\PHPEngine
+        arguments: [{view_path: "%app_path%/view/"}]
+
+    templating:
+        alias: templating.php

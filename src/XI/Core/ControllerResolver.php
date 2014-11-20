@@ -5,6 +5,7 @@ namespace XI\Core;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
+use XI\Controller;
 
 /**
  * @author Yakub Kristianto <yakub1986@gmail.com>
@@ -35,8 +36,9 @@ class ControllerResolver implements ControllerResolverInterface
             $this->args = array_slice($pathInfo, 2);
         }
 
+        /** @var Controller $controller */
         $controller = new $class();
-        if ($controller instanceof \XI\Controller) {
+        if ($controller instanceof Controller) {
             $controller->setContainer($this->container);
         }
         return [$controller, $method];
