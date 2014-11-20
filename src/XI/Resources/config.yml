@@ -23,5 +23,9 @@ services:
         class: XI\Templating\PHPEngine
         arguments: [{view_path: "%app_path%/view/"}]
 
+    templating.mustache:
+        class: XI\Templating\MustacheEngine
+        arguments: [{view_path: "%app_path%/view/"}]
+
     templating:
-        alias: templating.php
+        alias: templating.mustache
